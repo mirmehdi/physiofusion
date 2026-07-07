@@ -1,0 +1,14 @@
+name: physiofusion
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - numpy>=1.26
+  - pandas>=2.1
+  - scikit-learn>=1.4
+  - matplotlib>=3.8
+  - jupyterlab>=4.0
+  - pytest>=8.0
+  - pip:
+      - -e .

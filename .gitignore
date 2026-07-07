@@ -1,0 +1,38 @@
+# ── Raw / large data (managed by DVC, never committed to git) ──────────────
+/Data/
+*.zip
+*.crdownload
+*.dmg
+
+# ── macOS ──────────────────────────────────────────────────────────────────
+.DS_Store
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# ── Environments ─────────────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+.python-version
+
+# ── Experiment tracking / artifacts (added in later P0 steps) ────────────────
+mlruns/
+outputs/
+multirun/
+*.ckpt
+*.onnx
+
+# ── IDE ──────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
