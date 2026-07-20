@@ -167,3 +167,62 @@ def build_dataset(big_dir, subjects, history=24, horizon=6, step=1):
     groups = np.concatenate(g_parts)
 
     return X, y, groups
+
+def make_multimodal_windows(island, feature_cols, history=24, horizon=6, step=1):  # windows w/ features
+    """Turn ONE island into multimodal examples.
+
+    Each example X = [24 glucose history values] + [wristband features at the
+    LAST history step]. Target y = glucose 'horizon' steps ahead.
+
+    island       : DataFrame for one continuous island, with 'glucose' + feature_cols
+    feature_cols : list of wristband feature column names to append
+    Returns X (n, history + n_features), y (n,)
+    """
+    g = island["glucose"].to_numpy()                        # glucose column as array
+    feats = island[feature_cols].to_numpy()                 # wristband features as 2D array
+    n = len(g)                                              # island length
+    X, y = [], []                                           # accumulators
+
+    start = 0                                               # window start index
+    while start + history + horizon <= n:                   # fence: full window must fit
+        hist = g[start : start + history]                   # 24 glucose history values
+        last_feats = feats[start + history - 1]             # wristband features at last history step
+        X.append(np.concatenate([hist, last_feats]))        # combine: history + current features
+        y.append(g[start + history + horizon - 1])          # target: glucose 30 min ahead
+        start += step                                       # slide
+
+    if X:                                                   # stack if any windows made
+        return np.array(X), np.array(y)                     # (n, history+n_features), (n,)
+    n_cols = history + len(feature_cols)                    # width if empty
+    return np.empty((0, n_cols)), np.empty((0,))            # correctly-shaped empties
+
+
+def make_sequence_windows(island, channel_cols, history=24, horizon=6, step=1):  # sequential windows
+    """Turn ONE island into MULTI-CHANNEL SEQUENCE examples for early fusion.
+
+    Unlike make_multimodal_windows (which keeps only the LAST slot's wristband
+    features), this keeps the FULL HISTORY of every channel — so a temporal
+    model can find lagged cross-signal relationships.
+
+    island       : DataFrame for one continuous island
+    channel_cols : list of column names to use as channels, e.g.
+                   ["glucose", "hr_mean", "eda_mean", "temp_mean", "motion_mean"]
+    Returns X of shape (n_windows, n_channels, history), y of shape (n_windows,)
+    """
+    data = island[channel_cols].to_numpy()          # (island_len, n_channels) all channels over time
+    g = island["glucose"].to_numpy()                # glucose alone (for the target)
+    n = len(g)                                      # island length
+    n_ch = len(channel_cols)                        # how many channels
+    X, y = [], []                                   # accumulators
+
+    start = 0                                       # window start index
+    while start + history + horizon <= n:           # fence: whole window must fit in island
+        # take ALL channels over the history span -> shape (history, n_channels)
+        chunk = data[start : start + history]       # the multi-channel history block
+        X.append(chunk.T)                           # transpose -> (n_channels, history) for Conv1d
+        y.append(g[start + history + horizon - 1])  # target: glucose 30 min ahead
+        start += step                               # slide the window
+
+    if X:                                           # stack into a 3D array
+        return np.array(X), np.array(y)             # (n_windows, n_channels, history)
+    return np.empty((0, n_ch, history)), np.empty((0,))  # correctly-shaped empties

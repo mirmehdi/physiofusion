@@ -10,5 +10,7 @@ dependencies:
   - matplotlib>=3.8
   - jupyterlab>=4.0
   - pytest>=8.0
+  - neurokit2
+  - pyarrow
   - pip:
       - -e .
